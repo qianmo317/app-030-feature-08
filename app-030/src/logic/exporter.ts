@@ -61,6 +61,7 @@ export type OrderSheet = {
   totalQty: number
   totalPeople: number
   byOrgUnit: { orgUnit: string; rows: OrderSheetItem[]; total: number }[]
+  byBatch: { batch: string; validCount: number; regularQty: number; specialQty: number; total: number }[]
 }
 
 export function buildOrderSheet(ctx: ExportContext): OrderSheet {
@@ -83,6 +84,13 @@ export function buildOrderSheet(ctx: ExportContext): OrderSheet {
     })),
     total: group.regularQty + group.specialQty
   }))
+  const byBatch = summary.byBatch.map((group) => ({
+    batch: group.batch,
+    validCount: group.validCount,
+    regularQty: group.regularQty,
+    specialQty: group.specialQty,
+    total: group.regularQty + group.specialQty
+  }))
   return {
     meta: [
       { label: '项目名称', value: project.name },
@@ -95,7 +103,8 @@ export function buildOrderSheet(ctx: ExportContext): OrderSheet {
     items,
     totalQty: summary.totals.accountedQty,
     totalPeople: summary.totals.validRows,
-    byOrgUnit
+    byOrgUnit,
+    byBatch
   }
 }
 
@@ -118,6 +127,16 @@ export function orgUnitSheetToRows(order: OrderSheet): (string | number)[][] {
     }
     rows.push([`${group.orgUnit} 小计`, '', '', '', '', group.total])
   }
+  return rows
+}
+
+/** 按批次小计：批次名取自调整后的 person.batch / project.batches，改名 / 合并后导出即为新名 */
+export function batchSheetToRows(order: OrderSheet): (string | number)[][] {
+  const rows: (string | number)[][] = [['批次', '有效人数', '常规档', '特殊单列', '套数小计']]
+  for (const group of order.byBatch) {
+    rows.push([group.batch, group.validCount, group.regularQty, group.specialQty, group.total])
+  }
+  rows.push(['合计', order.totalPeople, '', '', order.totalQty])
   return rows
 }
 
@@ -245,7 +264,8 @@ export function orderWorkbookSheets(ctx: ExportContext): Sheet[] {
   const order = buildOrderSheet(ctx)
   return [
     { name: '下单汇总表', rows: orderSheetToRows(order) },
-    { name: '按班级车间小计', rows: orgUnitSheetToRows(order) }
+    { name: '按班级车间小计', rows: orgUnitSheetToRows(order) },
+    { name: '按批次小计', rows: batchSheetToRows(order) }
   ]
 }
 

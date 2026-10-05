@@ -6,6 +6,7 @@ import { computed, reactive, toRaw } from 'vue'
 import type { Project, ProjectKind, SizeRule } from './types'
 import { BUILTIN_RULES, DEFAULT_RULE_VERSION, ruleByVersion } from './sizeRules'
 import { runMerge } from './merge'
+import { addBatch as applyAddBatch, deleteBatch as applyDeleteBatch, mergeBatches as applyMergeBatches, renameBatch as applyRenameBatch } from './batches'
 import {
   STORE_META,
   STORE_PROJECTS,
@@ -160,6 +161,32 @@ export async function flushProject(project: Project): Promise<void> {
 export async function deleteProject(id: string): Promise<void> {
   store.projects = store.projects.filter((project) => project.id !== id)
   await idbDelete(STORE_PROJECTS, id)
+}
+
+/* ------------------------------ 批次维护 ------------------------------ */
+// 批次调整只改 person.batch 与批次清单，不删人、不改号型，人数 / 套数守恒；
+// 操作后立即落盘，避免现场调整后丢改动。
+
+export async function addProjectBatch(project: Project, name: string): Promise<string> {
+  const added = applyAddBatch(project, name)
+  await flushProject(project)
+  return added
+}
+
+export async function renameProjectBatch(project: Project, oldName: string, newName: string): Promise<void> {
+  applyRenameBatch(project, oldName, newName)
+  await flushProject(project)
+}
+
+export async function mergeProjectBatches(project: Project, sourceName: string, targetName: string): Promise<number> {
+  const moved = applyMergeBatches(project, sourceName, targetName)
+  await flushProject(project)
+  return moved
+}
+
+export async function deleteProjectBatch(project: Project, name: string): Promise<void> {
+  applyDeleteBatch(project, name)
+  await flushProject(project)
 }
 
 export async function saveRule(rule: SizeRule): Promise<void> {

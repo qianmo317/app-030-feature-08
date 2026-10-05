@@ -3,6 +3,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { flushProject, getProject, getRule, persistProject, store } from '../logic/store'
 import { analyzeDraft, findDuplicateIds, makePersonId, type PersonDraft } from '../logic/analyze'
+import { effectiveBatchNames } from '../logic/batches'
 import { estimateInitialSize, type EstimateResult } from '../logic/estimate'
 import { formatCm, parseLengthCm, parseWeightKg } from '../logic/precision'
 import { downloadText, toCsvText } from '../logic/csv'
@@ -45,6 +46,24 @@ watch(
   },
   { immediate: true }
 )
+
+/** 下拉批次：项目清单 + 导入 / 历史数据里出现过的清单外批次，避免选中丢失 */
+const batchChoices = computed(() => (project.value ? effectiveBatchNames(project.value) : []))
+
+// 批次在维护页被改名 / 合并 / 删除后，表单与粘性批次跟随到新批次
+watch(batchChoices, (choices) => {
+  if (choices.length === 0) {
+    sticky.batch = ''
+    form.batch = ''
+    return
+  }
+  // 空串与「未分批」等价（未填批次的兜底显示）
+  const current = sticky.batch === '' ? '未分批' : sticky.batch
+  if (!choices.includes(current)) {
+    sticky.batch = choices[0] === '未分批' ? '' : choices[0]
+    form.batch = sticky.batch
+  }
+})
 
 const duplicateIds = computed(() => {
   if (!project.value) return []
@@ -130,7 +149,7 @@ async function save(): Promise<void> {
     name: form.name,
     gender: form.gender,
     orgUnit: form.orgUnit,
-    batch: form.batch || current.batches[0] || '未分批',
+    batch: form.batch,
     heightCm: parseLengthCm(form.heightCm),
     weightKg: parseWeightKg(form.weightKg),
     chestCm: parseLengthCm(form.chestCm),
@@ -328,10 +347,15 @@ function genderText(gender: Gender): string {
 
             <label class="field">
               <span class="field-label">批次</span>
-              <select v-model="form.batch" class="select" data-field>
-                <option value="">未分批</option>
-                <option v-for="batch in project.batches" :key="batch" :value="batch">{{ batch }}</option>
-              </select>
+              <div class="toolbar" style="gap: 6px">
+                <select v-model="form.batch" class="select" data-field style="flex: 1">
+                  <option value="">未分批</option>
+                  <option v-for="batch in batchChoices.filter((item) => item !== '未分批')" :key="batch" :value="batch">
+                    {{ batch }}
+                  </option>
+                </select>
+                <RouterLink class="btn btn-sm" :to="`/batches/${project.id}`" title="新增 / 改名 / 合并 / 删除批次">维护</RouterLink>
+              </div>
             </label>
 
             <label class="field">

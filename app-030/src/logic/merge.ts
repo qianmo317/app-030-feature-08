@@ -245,6 +245,8 @@ export function buildSummary(project: Project, rule: SizeRule): Summary {
     })
     .sort((a, b) => a.orgUnit.localeCompare(b.orgUnit, 'zh-Hans-CN'))
 
+  // 批次小计按项目批次清单顺序排列，清单外批次（如导入带来的）补在最后
+  const batchOrder = new Map(project.batches.map((batch, index) => [batch, index]))
   const byBatch: BatchGroup[] = [...batchMap.entries()]
     .map(([batch, group]) => {
       const active = group.persons.filter((person) => person.status === 'active')
@@ -257,7 +259,12 @@ export function buildSummary(project: Project, rule: SizeRule): Summary {
         rows
       }
     })
-    .sort((a, b) => a.batch.localeCompare(b.batch, 'zh-Hans-CN'))
+    .sort((a, b) => {
+      const ia = batchOrder.has(a.batch) ? batchOrder.get(a.batch)! : Number.MAX_SAFE_INTEGER
+      const ib = batchOrder.has(b.batch) ? batchOrder.get(b.batch)! : Number.MAX_SAFE_INTEGER
+      if (ia !== ib) return ia - ib
+      return a.batch.localeCompare(b.batch, 'zh-Hans-CN')
+    })
 
   const distribution: DistributionRow[] = [...allRows]
     .sort((a, b) => b.qty - a.qty || compareRows(a, b))
