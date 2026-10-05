@@ -167,6 +167,7 @@ function formatTime(value: number): string {
               <td>
                 <div class="toolbar">
                   <RouterLink class="btn btn-sm" :to="`/measure/${project.id}`">录入</RouterLink>
+                  <RouterLink class="btn btn-sm" :to="`/batches/${project.id}`">批次</RouterLink>
                   <RouterLink class="btn btn-sm" :to="`/import/${project.id}`">导入</RouterLink>
                   <RouterLink class="btn btn-sm" :to="`/merge/${project.id}`">归并</RouterLink>
                   <RouterLink class="btn btn-sm" :to="`/summary/${project.id}`">汇总</RouterLink>

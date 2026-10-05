@@ -285,6 +285,47 @@ const rowLabel = (sizeCode: string, isSpecial: boolean): string =>
 
     <p v-if="message" class="notice notice-ok">{{ message }}</p>
 
+    <div v-if="summary.byBatch.length > 0" class="card">
+      <div class="card-head">
+        <h3>分批小计（批次调整后自动同步）</h3>
+        <div class="spacer"></div>
+        <span class="hint">各批有效人数 / 套数随批次改名、合并实时更新，合计与守恒等式一致</span>
+        <RouterLink class="btn btn-sm" :to="`/batches/${project.id}`">批次维护</RouterLink>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>批次</th>
+              <th class="num">有效人数</th>
+              <th class="num">常规档</th>
+              <th class="num">特殊单列</th>
+              <th class="num">小计（套）</th>
+              <th class="num">无效/排除</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="group in summary.byBatch" :key="group.batch">
+              <td>{{ group.batch }}</td>
+              <td class="num">{{ group.validCount }}</td>
+              <td class="num">{{ group.regularQty }}</td>
+              <td class="num">{{ group.specialQty }}</td>
+              <td class="num"><b>{{ group.regularQty + group.specialQty }}</b></td>
+              <td class="num">{{ project.persons.filter((person) => (person.batch || '未分批') === group.batch && person.status !== 'active').length }}</td>
+            </tr>
+            <tr class="row-subtotal">
+              <td>合计</td>
+              <td class="num">{{ summary.totals.validRows }}</td>
+              <td class="num">{{ summary.totals.regularQty }}</td>
+              <td class="num">{{ summary.totals.specialQty }}</td>
+              <td class="num">{{ summary.totals.accountedQty }}</td>
+              <td class="num">{{ summary.totals.invalidRows + summary.totals.duplicateRows }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card" :class="summary.unmerged.length ? 'card-accent-danger' : 'card-accent-ok'">
       <div class="card-head">
         <h3>守恒校验（导出前置条件）</h3>

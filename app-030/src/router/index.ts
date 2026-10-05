@@ -6,6 +6,7 @@ const router = createRouter({
     { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
     { path: '/rules', name: 'rules', component: () => import('../views/RulesView.vue') },
     { path: '/measure/:id', name: 'measure', component: () => import('../views/MeasureView.vue') },
+    { path: '/batches/:id', name: 'batches', component: () => import('../views/BatchesView.vue') },
     { path: '/import/:id', name: 'import', component: () => import('../views/ImportView.vue') },
     { path: '/merge/:id', name: 'merge', component: () => import('../views/MergeView.vue') },
     { path: '/summary/:id', name: 'summary', component: () => import('../views/SummaryView.vue') },

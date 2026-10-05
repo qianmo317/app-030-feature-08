@@ -8,6 +8,7 @@ import { formatCm, parseLengthCm, parseWeightKg } from '../logic/precision'
 import { downloadText, toCsvText } from '../logic/csv'
 import { runMerge } from '../logic/merge'
 import { detailRows } from '../logic/exporter'
+import { effectiveBatchKeys } from '../logic/batches'
 import type { Gender, Person } from '../logic/types'
 
 const route = useRoute()
@@ -36,6 +37,9 @@ const warnText = ref('')
 const savedCount = ref(0)
 const saving = ref(false)
 
+/** 批次下拉：登记批次 + 历史数据里挂着人但未登记的批次（避免录过的批次在下拉里消失） */
+const batchOptions = computed(() => (project.value ? effectiveBatchKeys(project.value) : []))
+
 watch(
   project,
   (value) => {
@@ -44,6 +48,16 @@ watch(
     form.batch = sticky.batch
   },
   { immediate: true }
+)
+
+/** 批次在维护页被改名 / 合并 / 删除后，修正录入表单当前选中的批次 */
+watch(
+  batchOptions,
+  (options) => {
+    const valid = (key: string) => key === '' || options.includes(key)
+    if (!valid(sticky.batch)) sticky.batch = options[0] ?? ''
+    if (!valid(form.batch)) form.batch = sticky.batch
+  }
 )
 
 const duplicateIds = computed(() => {
@@ -130,7 +144,7 @@ async function save(): Promise<void> {
     name: form.name,
     gender: form.gender,
     orgUnit: form.orgUnit,
-    batch: form.batch || current.batches[0] || '未分批',
+    batch: form.batch || batchOptions.value[0] || '未分批',
     heightCm: parseLengthCm(form.heightCm),
     weightKg: parseWeightKg(form.weightKg),
     chestCm: parseLengthCm(form.chestCm),
@@ -227,6 +241,7 @@ function genderText(gender: Gender): string {
       </div>
       <div class="spacer"></div>
       <div class="toolbar">
+        <RouterLink class="btn btn-sm" :to="`/batches/${project.id}`">批次维护</RouterLink>
         <RouterLink class="btn btn-sm" :to="`/import/${project.id}`">批量导入</RouterLink>
         <button class="btn btn-sm" type="button" @click="exportFallbackCsv">导出 CSV（兜底）</button>
       </div>
@@ -330,7 +345,7 @@ function genderText(gender: Gender): string {
               <span class="field-label">批次</span>
               <select v-model="form.batch" class="select" data-field>
                 <option value="">未分批</option>
-                <option v-for="batch in project.batches" :key="batch" :value="batch">{{ batch }}</option>
+                <option v-for="batch in batchOptions" :key="batch" :value="batch">{{ batch }}</option>
               </select>
             </label>
 

@@ -228,11 +228,12 @@ function exportStockAdvice(): void {
       </div>
     </div>
 
-    <div v-if="project.batches.length > 1" class="card">
+    <div v-if="summary.byBatch.length > 0" class="card">
       <div class="card-head">
-        <h3>多批次分别归并与合计</h3>
+        <h3>分批小计（{{ summary.byBatch.length }} 个批次）</h3>
         <div class="spacer"></div>
-        <span class="hint">春装 / 秋装两批分别归并，合计仍与守恒等式一致</span>
+        <span class="hint">各批分别归并，合计仍与守恒等式一致；批次改名 / 合并 / 删除后这里自动同步</span>
+        <RouterLink class="btn btn-sm" :to="`/batches/${project.id}`">批次维护</RouterLink>
       </div>
       <div class="table-wrap">
         <table class="data-table">
